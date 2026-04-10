@@ -1,0 +1,6 @@
+[submodule "example/mermaid-rs-renderer"]
+	path = example/mermaid-rs-renderer
+	url = https://github.com/1jehuang/mermaid-rs-renderer.git
+[submodule "example/vditor"]
+	path = example/vditor
+	url = https://github.com/Murmurl912/vditor.git

@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:scroll_to_index/scroll_to_index.dart';
 
 typedef SelectionMenuItemHandler = void Function(
   EditorState editorState,
@@ -303,7 +302,8 @@ class _SelectionMenuWidgetState extends State<SelectionMenuWidget> {
 
   int _selectedIndex = 0;
   List<SelectionMenuItem> _showingItems = [];
-  AutoScrollController? _scrollController;
+  ScrollController? _scrollController;
+  final Map<int, GlobalKey> _itemKeys = {};
 
   int _searchCounter = 0;
 
@@ -353,7 +353,7 @@ class _SelectionMenuWidgetState extends State<SelectionMenuWidget> {
 
     _showingItems = widget.items;
     if (widget.singleColumn) {
-      _scrollController = AutoScrollController();
+      _scrollController = ScrollController();
     }
 
     keepEditorFocusNotifier.increase();
@@ -405,10 +405,14 @@ class _SelectionMenuWidgetState extends State<SelectionMenuWidget> {
       return;
     }
 
-    _scrollController?.scrollToIndex(
-      _selectedIndex,
-      preferPosition: AutoScrollPosition.middle,
-    );
+    final key = _itemKeys[_selectedIndex];
+    if (key?.currentContext != null) {
+      Scrollable.ensureVisible(
+        key!.currentContext!,
+        alignment: 0.5,
+        duration: const Duration(milliseconds: 150),
+      );
+    }
   }
 
   Widget _buildResultsWidget(
@@ -420,11 +424,10 @@ class _SelectionMenuWidgetState extends State<SelectionMenuWidget> {
     if (widget.singleColumn) {
       List<Widget> itemWidgets = [];
       for (var i = 0; i < items.length; i++) {
+        final itemKey = _itemKeys.putIfAbsent(i, () => GlobalKey());
         itemWidgets.add(
-          AutoScrollTag(
-            key: ValueKey(i),
-            index: i,
-            controller: _scrollController!,
+          KeyedSubtree(
+            key: itemKey,
             child: SelectionMenuItemWidget(
               item: items[i],
               isSelected: selectedIndex == i,

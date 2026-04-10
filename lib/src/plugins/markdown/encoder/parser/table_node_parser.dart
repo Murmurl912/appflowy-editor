@@ -16,7 +16,12 @@ class TableNodeParser extends NodeParser {
     for (var i = 0; i < rowsLen; i++) {
       for (var j = 0; j < colsLen; j++) {
         final Node cell = getCellNode(node, j, i)!;
-        String cellStr = '|${documentToMarkdown(Document(root: cell))}';
+        // Replace newlines with <br/> so multi-line cell content
+        // (rich text, images) stays within a single table row.
+        final cellMarkdown = documentToMarkdown(Document(root: cell))
+            .trimRight()
+            .replaceAll('\n', '<br/>');
+        String cellStr = '|$cellMarkdown';
         // markdown doesn't have literally empty table cell
         cellStr = cellStr == '|' ? '| ' : cellStr;
 

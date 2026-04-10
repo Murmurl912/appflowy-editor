@@ -66,6 +66,11 @@ CommandShortcutEventHandler _pasteCommandHandler = (editorState) {
     }
 
     if (text != null && text.isNotEmpty) {
+      if (editorState.enableMarkdownPaste) {
+        if (await editorState.pasteMarkdown(text)) {
+          return;
+        }
+      }
       editorState.pastePlainText(text);
     }
   }();
@@ -85,6 +90,20 @@ RegExp _phoneRegex = RegExp(r'^\+?' // Optional '+' at start
 extension on EditorState {
   Future<bool> pasteHtml(String html) async {
     final nodes = htmlToDocument(html).root.children.toList();
+    return _pasteNodes(nodes);
+  }
+
+  Future<bool> pasteMarkdown(String markdown) async {
+    try {
+      final nodes = markdownToDocument(markdown).root.children.toList();
+      return _pasteNodes(nodes);
+    } catch (e) {
+      AppFlowyEditorLog.editor.debug('Failed to parse markdown: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _pasteNodes(List<Node> nodes) async {
     // remove the front and back empty line
     while (nodes.isNotEmpty &&
         nodes.first.delta?.isEmpty == true &&
@@ -99,6 +118,23 @@ extension on EditorState {
     if (nodes.isEmpty) {
       return false;
     }
+
+    // When pasting into a non-delta block (e.g. table/image selected via
+    // handle), insert the nodes after the current block.
+    final selection = this.selection;
+    if (selection != null) {
+      final currentNode = getNodeAtPath(selection.start.path);
+      if (currentNode != null && currentNode.delta == null) {
+        final transaction = this.transaction;
+        transaction.insertNodes(selection.start.path.next, nodes);
+        transaction.afterSelection = Selection.collapsed(
+          Position(path: selection.start.path.next),
+        );
+        await apply(transaction);
+        return true;
+      }
+    }
+
     if (nodes.length == 1) {
       await pasteSingleLineNode(nodes.first);
     } else {

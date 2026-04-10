@@ -294,6 +294,8 @@ class EditorState {
   bool enableAutoComplete = false;
   AppFlowyAutoCompleteTextProvider? autoCompleteTextProvider;
 
+  bool enableMarkdownPaste = true;
+
   // only used for testing
   bool disableSealTimer = false;
 

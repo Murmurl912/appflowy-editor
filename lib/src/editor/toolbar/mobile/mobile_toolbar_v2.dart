@@ -90,12 +90,17 @@ class _MobileToolbarV2State extends State<MobileToolbarV2> {
         Expanded(
           child: widget.child,
         ),
-        // add a bottom offset to make sure the toolbar is above the keyboard
-        ValueListenableBuilder(
-          valueListenable: isKeyboardShow,
-          builder: (context, isKeyboardShow, __) {
-            return SizedBox(
-              height: isKeyboardShow ? widget.toolbarHeight : 0,
+        ValueListenableBuilder<Selection?>(
+          valueListenable: widget.editorState.selectionNotifier,
+          builder: (context, selection, __) {
+            return ValueListenableBuilder(
+              valueListenable: isKeyboardShow,
+              builder: (context, isKeyboardShow, ___) {
+                final visible = selection != null;
+                return SizedBox(
+                  height: visible || isKeyboardShow ? widget.toolbarHeight : 0,
+                );
+              },
             );
           },
         ),
@@ -270,14 +275,6 @@ class _MobileToolbarState extends State<_MobileToolbar>
   }
 
   void _onKeyboardHeightChanged(double height) {
-    // if the keyboard is not closed initiative, we need to close the menu at same time
-    if (!closeKeyboardInitiative &&
-        cachedKeyboardHeight.value != 0 &&
-        !showMenuNotifier.value &&
-        height == 0) {
-      widget.editorState.selection = null;
-    }
-
     if (canUpdateCachedKeyboardHeight) {
       cachedKeyboardHeight.value = height;
       if (defaultTargetPlatform == TargetPlatform.android) {
@@ -373,9 +370,7 @@ class _MobileToolbarState extends State<_MobileToolbar>
                     _showKeyboard();
                   } else {
                     closeKeyboardInitiative = true;
-                    // close the keyboard and clear the selection
-                    // if the selection is null, the keyboard and the toolbar will be hidden automatically
-                    widget.editorState.selection = null;
+                    _closeKeyboard();
                   }
                 },
               );

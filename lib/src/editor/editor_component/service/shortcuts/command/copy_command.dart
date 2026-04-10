@@ -17,23 +17,44 @@ final CommandShortcutEvent copyCommand = CommandShortcutEvent(
 
 CommandShortcutEventHandler _copyCommandHandler = (editorState) {
   final selection = editorState.selection?.normalized;
-  if (selection == null || selection.isCollapsed) {
+  if (selection == null) {
     return KeyEventResult.ignored;
   }
 
-  // plain text.
-  final text = editorState.getTextInSelection(selection).join('\n');
+  // block selection (e.g. table/image selected via handle)
+  if (selection.isCollapsed &&
+      editorState.selectionType == SelectionType.block) {
+    final node = editorState.getNodeAtPath(selection.end.path);
+    if (node == null) {
+      return KeyEventResult.ignored;
+    }
+    final document = Document.blank()..insert([0], [node.copyWith()]);
+    final markdown = documentToMarkdown(document);
+    final html = documentToHTML(document);
+    () async {
+      await AppFlowyClipboard.setData(
+        text: markdown.isNotEmpty ? markdown : null,
+        html: html.isEmpty ? null : html,
+      );
+    }();
+    return KeyEventResult.handled;
+  }
 
-  // html
+  if (selection.isCollapsed) {
+    return KeyEventResult.ignored;
+  }
+
   final nodes = editorState.getSelectedNodes(
     selection: selection,
   );
   final document = Document.blank()..insert([0], nodes);
+
+  final markdown = documentToMarkdown(document);
   final html = documentToHTML(document);
 
   () async {
     await AppFlowyClipboard.setData(
-      text: text.isEmpty ? null : text,
+      text: markdown.isNotEmpty ? markdown : null,
       html: html.isEmpty ? null : html,
     );
   }();

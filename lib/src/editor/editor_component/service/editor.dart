@@ -39,6 +39,7 @@ class AppFlowyEditor extends StatefulWidget {
     this.focusNode,
     this.enableAutoComplete = false,
     this.autoCompleteTextProvider,
+    this.enableMarkdownPaste = true,
     this.dropTargetStyle,
     this.disableSelectionService = false,
     this.disableKeyboardService = false,
@@ -180,6 +181,12 @@ class AppFlowyEditor extends StatefulWidget {
   final bool enableAutoComplete;
 
   final AppFlowyAutoCompleteTextProvider? autoCompleteTextProvider;
+
+  /// Enable parsing pasted text as markdown.
+  ///
+  /// When true, pasted plain text will be parsed as markdown and rendered
+  /// with formatting. Ctrl+Shift+V (paste without formatting) is unaffected.
+  final bool enableMarkdownPaste;
 
   /// {@macro flutter.widgets.editableText.contentInsertionConfiguration}
   final ContentInsertionConfiguration? contentInsertionConfiguration;
@@ -377,6 +384,7 @@ class _AppFlowyEditorState extends State<AppFlowyEditor> {
     editorState.showFooter = widget.footer != null;
     editorState.enableAutoComplete = widget.enableAutoComplete;
     editorState.autoCompleteTextProvider = widget.autoCompleteTextProvider;
+    editorState.enableMarkdownPaste = widget.enableMarkdownPaste;
     editorState.disableAutoScroll = widget.disableAutoScroll;
     editorState.autoScrollEdgeOffset = widget.autoScrollEdgeOffset;
     editorState.documentRules = widget.documentRules;

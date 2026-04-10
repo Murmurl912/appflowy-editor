@@ -6,6 +6,7 @@ import 'package:collection/collection.dart';
 import 'package:markdown/markdown.dart' as md;
 
 import 'custom_syntaxes/formula_syntax.dart';
+import 'custom_syntaxes/highlight_syntax.dart';
 
 class DocumentMarkdownDecoder extends Converter<String, Document> {
   DocumentMarkdownDecoder({
@@ -25,6 +26,7 @@ class DocumentMarkdownDecoder extends Converter<String, Document> {
         ...inlineSyntaxes,
         FormulaInlineSyntax(),
         UnderlineInlineSyntax(),
+        HighlightInlineSyntax(),
       ],
       encodeHtml: false,
     ).parse(formattedMarkdown);

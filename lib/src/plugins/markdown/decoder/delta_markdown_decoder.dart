@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'package:appflowy_editor/src/core/document/attributes.dart';
 import 'package:appflowy_editor/src/core/document/text_delta.dart';
 import 'package:appflowy_editor/src/core/legacy/built_in_attribute_keys.dart';
+import 'package:appflowy_editor/src/editor/block_component/rich_text/appflowy_rich_text_keys.dart';
 import 'package:appflowy_editor/src/plugins/markdown/decoder/custom_syntaxes/underline_syntax.dart';
 import 'package:markdown/markdown.dart' as md;
 
 import 'custom_syntaxes/formula_syntax.dart';
+import 'custom_syntaxes/highlight_syntax.dart';
 
 class DeltaMarkdownDecoder extends Converter<String, Delta>
     implements md.NodeVisitor {
@@ -23,6 +25,7 @@ class DeltaMarkdownDecoder extends Converter<String, Delta>
     final inlineSyntaxes = [
       UnderlineInlineSyntax(),
       FormulaInlineSyntax(),
+      HighlightInlineSyntax(),
       ...customInlineSyntaxes,
     ];
     final document = md.Document(
@@ -79,6 +82,9 @@ class DeltaMarkdownDecoder extends Converter<String, Delta>
       _attributes[BuiltInAttributeKey.href] = element.attributes['href'];
     } else if (element.tag == 'u') {
       _attributes[BuiltInAttributeKey.underline] = true;
+    } else if (element.tag == 'mark') {
+      _attributes[AppFlowyRichTextKeys.backgroundColor] =
+          element.attributes['color'] ?? '0x4DFFEB3B';
     } else if (element.tag == 'formula') {
       _attributes[BuiltInAttributeKey.formula] = element.attributes['formula'];
     } else {
@@ -105,6 +111,8 @@ class DeltaMarkdownDecoder extends Converter<String, Delta>
       _attributes.remove(BuiltInAttributeKey.href);
     } else if (element.tag == 'u') {
       _attributes.remove(BuiltInAttributeKey.underline);
+    } else if (element.tag == 'mark') {
+      _attributes.remove(AppFlowyRichTextKeys.backgroundColor);
     } else if (element.tag == 'formula') {
       _attributes.remove(BuiltInAttributeKey.formula);
     } else {

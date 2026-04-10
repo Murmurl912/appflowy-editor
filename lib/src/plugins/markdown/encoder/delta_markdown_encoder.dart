@@ -47,6 +47,9 @@ class DeltaMarkdownEncoder extends Converter<Delta, String> {
     if (attributes[BuiltInAttributeKey.strikethrough] == true) {
       syntax += '~~';
     }
+    if (attributes[AppFlowyRichTextKeys.backgroundColor] != null) {
+      syntax += '==';
+    }
     if (attributes[BuiltInAttributeKey.underline] == true) {
       syntax += '<u>';
     }
@@ -78,6 +81,9 @@ class DeltaMarkdownEncoder extends Converter<Delta, String> {
 
     if (attributes[BuiltInAttributeKey.underline] == true) {
       syntax += '</u>';
+    }
+    if (attributes[AppFlowyRichTextKeys.backgroundColor] != null) {
+      syntax += '==';
     }
 
     if (attributes[BuiltInAttributeKey.strikethrough] == true) {

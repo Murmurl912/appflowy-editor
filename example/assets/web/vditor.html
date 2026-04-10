@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="app://asset/web/dist/index.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; background: #fff; color: #000; }
+    #vditor { height: 100%; }
+    .vditor { border: none !important; }
+    .vditor-toolbar { display: none !important; }
+    .vditor-content { padding-top: 0 !important; }
+    .vditor-ir .vditor-reset, .vditor-wysiwyg .vditor-reset, .vditor-sv .vditor-reset {
+      padding: 16px !important; font-size: 16px; line-height: 1.6;
+    }
+    body.dark, body.dark html { background: #000; color: #e0e0e0; }
+    body.dark .vditor-reset { color: #e0e0e0; }
+    body.dark .vditor--dark { background: #000 !important; }
+  </style>
+</head>
+<body>
+  <div id="vditor"></div>
+  <script src="app://asset/web/dist/index.min.js"></script>
+  <script>
+    function initEditor(config) {
+      const opts = JSON.parse(config);
+      if (opts.dark) document.body.classList.add('dark');
+
+      new Vditor('vditor', {
+        cdn: 'app://asset/web',
+        mode: 'ir',
+        lang: 'en_US',
+        theme: opts.dark ? 'dark' : 'classic',
+        toolbar: [
+          'headings', 'bold', 'italic', 'strike', 'link',
+          'list', 'ordered-list', 'check', 'outdent', 'indent',
+          'quote', 'code', 'inline-code', 'table', 'line',
+          'undo', 'redo',
+        ],
+        value: opts.content || '',
+        cache: { enable: false },
+        preview: {
+          theme: { current: opts.dark ? 'dark' : 'light' },
+          hljs: { style: opts.dark ? 'monokai' : 'github', lineNumber: true },
+          math: { engine: 'KaTeX' },
+          markdown: { toc: true, mark: true, footnotes: true },
+        },
+        counter: { enable: false },
+        placeholder: 'Start writing...',
+        height: '100%',
+        after: () => {
+          // Bridge is auto-initialized via index.ts
+          // Apply initial insets
+          if (window.VditorBridge && (opts.topInset || opts.bottomInset)) {
+            window.VditorBridge.setInsets(opts.topInset || 0, opts.bottomInset || 0, 0);
+          }
+        },
+      });
+    }
+  </script>
+</body>
+</html>
