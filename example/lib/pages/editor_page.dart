@@ -33,6 +33,10 @@ class EditorPage extends StatelessWidget {
                     disableKeyboardService: !provider.editing,
                     blockComponentBuilders: {
                       ...standardBlockComponentBuilderMap,
+                      // Override table with better styling
+                      TableBlockKeys.type: TableBlockComponentBuilder(
+                        tableStyle: _tableStyle(context),
+                      ),
                       CodeBlockKeys.type: CodeBlockComponentBuilder(),
                       MermaidBlockKeys.type: MermaidBlockComponentBuilder(),
                       MathEquationBlockKeys.type: MathEquationBlockComponentBuilder(),
@@ -41,7 +45,10 @@ class EditorPage extends StatelessWidget {
                       VideoBlockKeys.type: VideoBlockComponentBuilder(),
                       PdfBlockKeys.type: PdfBlockComponentBuilder(),
                     },
-                    characterShortcutEvents: standardCharacterShortcutEvents,
+                    characterShortcutEvents: [
+                      ...codeBlockCharacterEvents,
+                      ...standardCharacterShortcutEvents,
+                    ],
                     enableMarkdownPaste: true,
                     shrinkWrap: false,
                     autoFocus: false,
@@ -62,6 +69,18 @@ class EditorPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  TableStyle _tableStyle(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return TableStyle(
+      colWidth: 120,
+      rowHeight: 36,
+      colMinimumWidth: 60,
+      borderWidth: 1,
+      borderColor: isDark ? Colors.grey[800]! : Colors.grey[300]!,
+      borderHoverColor: isDark ? Colors.white : Colors.black,
     );
   }
 

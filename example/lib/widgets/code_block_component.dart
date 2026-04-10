@@ -235,3 +235,59 @@ const _darkTheme = <String, TextStyle>{
   'variable': TextStyle(color: Color(0xFFF8F8F2)),
   'meta': TextStyle(color: Color(0xFFF8F8F2)),
 };
+
+// ============================================================
+// Code Block Shortcut Events
+// ============================================================
+
+/// Enter in code block: insert newline into delta instead of creating new block.
+final CharacterShortcutEvent enterInCodeBlock = CharacterShortcutEvent(
+  key: 'press enter in code block',
+  character: '\n',
+  handler: (editorState) async {
+    final selection = editorState.selection;
+    if (selection == null || !selection.isCollapsed) return false;
+    final node = editorState.getNodeAtPath(selection.end.path);
+    if (node == null || node.type != CodeBlockKeys.type) return false;
+
+    // Auto-indent: match leading spaces of current line
+    final lines = node.delta?.toPlainText().split('\n') ?? [];
+    int spaces = 0;
+    int index = 0;
+    for (final line in lines) {
+      if (index <= selection.endIndex && selection.endIndex <= index + line.length) {
+        spaces = line.length - line.trimLeft().length;
+        break;
+      }
+      index += line.length + 1;
+    }
+
+    final transaction = editorState.transaction
+      ..insertText(node, selection.end.offset, '\n${' ' * spaces}');
+    await editorState.apply(transaction);
+    return true;
+  },
+);
+
+/// Ignore markdown shortcut characters inside code blocks.
+final List<CharacterShortcutEvent> ignoreKeysInCodeBlock =
+    [' ', '/', '_', '*', '~', '-'].map(
+      (ch) => CharacterShortcutEvent(
+        key: 'ignore $ch in code block',
+        character: ch,
+        handler: (editorState) async {
+          final selection = editorState.selection;
+          if (selection == null || !selection.isCollapsed) return false;
+          final node = editorState.getNodeAtPath(selection.end.path);
+          if (node == null || node.type != CodeBlockKeys.type) return false;
+          await editorState.insertTextAtCurrentSelection(ch);
+          return true;
+        },
+      ),
+    ).toList();
+
+/// All code block character shortcut events.
+List<CharacterShortcutEvent> get codeBlockCharacterEvents => [
+  enterInCodeBlock,
+  ...ignoreKeysInCodeBlock,
+];

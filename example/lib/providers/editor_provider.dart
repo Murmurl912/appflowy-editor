@@ -4,6 +4,7 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:example/models/app_document.dart';
 import 'package:example/repo/document_repository.dart';
 import 'package:example/widgets/math_equation_markdown.dart';
+import 'package:example/widgets/smart_markdown_encoder.dart';
 import 'package:example/widgets/table_node_parser_fix.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -102,14 +103,8 @@ class EditorProvider extends ChangeNotifier {
 
   String? _extractTitleFromDocument() {
     for (final node in _editorState.document.root.children) {
-      if (node.type == HeadingBlockKeys.type) {
-        final text = node.delta?.toPlainText().trim();
-        if (text != null && text.isNotEmpty) return text;
-      }
-      if (node.type == ParagraphBlockKeys.type) {
-        final text = node.delta?.toPlainText().trim();
-        if (text != null && text.isNotEmpty) return text;
-      }
+      final text = node.delta?.toPlainText().trim();
+      if (text != null && text.isNotEmpty) return text;
     }
     return null;
   }
@@ -121,9 +116,8 @@ class EditorProvider extends ChangeNotifier {
   }
 
   Future<void> _save() async {
-    final markdown = documentToMarkdown(
+    final markdown = smartDocumentToMarkdown(
       _editorState.document,
-      lineBreak: '\n',
       customParsers: const [FixedTableNodeParser(), MermaidNodeParser(), MathEquationNodeParser()],
     );
     final docTitle = _extractTitleFromDocument() ?? _document.title;
@@ -138,9 +132,8 @@ class EditorProvider extends ChangeNotifier {
   @override
   void dispose() {
     _saveTimer?.cancel();
-    final markdown = documentToMarkdown(
+    final markdown = smartDocumentToMarkdown(
       _editorState.document,
-      lineBreak: '\n',
       customParsers: const [FixedTableNodeParser(), MermaidNodeParser(), MathEquationNodeParser()],
     );
     final docTitle = _extractTitleFromDocument() ?? _document.title;

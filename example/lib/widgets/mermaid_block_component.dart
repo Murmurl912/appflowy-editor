@@ -60,7 +60,6 @@ class _MermaidBlockWidgetState extends State<MermaidBlockWidget>
 
   String? _cachedSvg;
   String? _cachedInput;
-  bool _showSource = false;
 
   bool _cachedDark = false;
 
@@ -103,53 +102,44 @@ class _MermaidBlockWidgetState extends State<MermaidBlockWidget>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with toggle
-            GestureDetector(
-              onTap: editorState.editable
-                  ? () => setState(() => _showSource = !_showSource)
-                  : null,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: isDark
-                          ? Colors.indigo.withValues(alpha: 0.2)
-                          : Colors.indigo.withValues(alpha: 0.1),
-                    ),
+            // Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: isDark
+                        ? Colors.indigo.withValues(alpha: 0.2)
+                        : Colors.indigo.withValues(alpha: 0.1),
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.account_tree_outlined,
-                      size: 14,
-                      color: isDark ? Colors.indigo[300] : Colors.indigo[700],
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Mermaid',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? Colors.indigo[300] : Colors.indigo[700],
-                      ),
-                    ),
-                    const Spacer(),
-                    if (editorState.editable)
-                      Icon(
-                        _showSource ? Icons.visibility : Icons.edit_outlined,
-                        size: 14,
-                        color: isDark ? Colors.grey[500] : Colors.grey[600],
-                      ),
-                  ],
-                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.account_tree_outlined, size: 14,
+                      color: isDark ? Colors.indigo[300] : Colors.indigo[700]),
+                  const SizedBox(width: 6),
+                  Text('Mermaid', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.indigo[300] : Colors.indigo[700])),
+                ],
               ),
             ),
-            // Body
+            // Preview (top)
             Padding(
               padding: const EdgeInsets.all(12),
-              child: _showSource ? _buildEditor(isDark) : _buildPreview(isDark),
+              child: _buildPreview(isDark),
+            ),
+            // Divider
+            Container(
+              height: 1,
+              color: isDark
+                  ? Colors.indigo.withValues(alpha: 0.2)
+                  : Colors.indigo.withValues(alpha: 0.1),
+            ),
+            // Source editor (bottom)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: _buildEditor(isDark),
             ),
           ],
         ),
@@ -159,12 +149,9 @@ class _MermaidBlockWidgetState extends State<MermaidBlockWidget>
 
   Widget _buildPreview(bool isDark) {
     if (_content.isEmpty) {
-      return GestureDetector(
-        onTap: editorState.editable
-            ? () => setState(() => _showSource = true)
-            : null,
+      return Center(
         child: Text(
-          'Tap to add mermaid diagram...',
+          'Preview',
           style: TextStyle(color: Colors.grey[500], fontStyle: FontStyle.italic),
         ),
       );
@@ -176,14 +163,11 @@ class _MermaidBlockWidgetState extends State<MermaidBlockWidget>
       );
     }
 
-    // Fallback: show source code
-    return Text(
-      _content,
-      style: TextStyle(
-        fontFamily: 'monospace',
-        fontSize: 12,
-        height: 1.5,
-        color: isDark ? Colors.grey[400] : Colors.grey[700],
+    // Fallback: show rendered text
+    return Center(
+      child: Text(
+        'Preview not available',
+        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
       ),
     );
   }
