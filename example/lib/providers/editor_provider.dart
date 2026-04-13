@@ -12,10 +12,9 @@ class EditorProvider extends ChangeNotifier {
   EditorProvider({
     required DocumentRepository repo,
     required AppDocument document,
-    bool initialEditing = false,
+    bool initialEditing = true,
   })  : _repo = repo,
-        _document = document,
-        _editing = initialEditing {
+        _document = document {
     _initEditor();
   }
 
@@ -28,7 +27,6 @@ class EditorProvider extends ChangeNotifier {
   bool _loading = true;
   StreamSubscription? _transactionSub;
   bool _searchMode = false;
-  bool _editing = false;
 
   AppDocument get document => _document;
   EditorState get editorState => _editorState;
@@ -39,7 +37,7 @@ class EditorProvider extends ChangeNotifier {
   bool get canRedo => _editorState.undoManager.redoStack.isNonEmpty;
 
   bool get searchMode => _searchMode;
-  bool get editing => _editing;
+  bool get editing => true;
 
   String get title {
     final docTitle = _extractTitleFromDocument();
@@ -66,19 +64,6 @@ class EditorProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void enterEditing() {
-    _editing = true;
-    _editorState.editableNotifier.value = true;
-    notifyListeners();
-  }
-
-  void exitEditing() {
-    _editing = false;
-    _editorState.editableNotifier.value = false;
-    editorFocus.unfocus();
-    notifyListeners();
-  }
-
   void _initEditor() {
     final doc = _document.content.trim().isEmpty
         ? Document.blank(withInitialText: true)
@@ -91,7 +76,7 @@ class EditorProvider extends ChangeNotifier {
           );
 
     _editorState = EditorState(document: doc);
-    _editorState.editableNotifier.value = _editing;
+    _editorState.editableNotifier.value = true;
     _transactionSub = _editorState.transactionStream.listen((_) => _scheduleSave());
     _scrollController = EditorScrollController(
       editorState: _editorState,

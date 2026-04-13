@@ -14,10 +14,15 @@ npx esbuild src/index.ts \
   --target=es2020
 
 cp src/style.css dist/tiptap.css
+cp node_modules/katex/dist/katex.min.css dist/katex.min.css
+mkdir -p dist/fonts
+cp node_modules/katex/dist/fonts/*.woff2 dist/fonts/
 
 echo "Copying to Flutter assets..."
-mkdir -p ../assets/web/tiptap
-cp dist/tiptap-bundle.js dist/tiptap.css ../assets/web/tiptap/
+ASSETS="../assets/web/tiptap"
+mkdir -p "$ASSETS/fonts"
+cp dist/tiptap-bundle.js dist/tiptap.css dist/katex.min.css "$ASSETS/"
+cp dist/fonts/*.woff2 "$ASSETS/fonts/"
 
 echo "Done! Bundle size:"
 ls -lh dist/tiptap-bundle.js

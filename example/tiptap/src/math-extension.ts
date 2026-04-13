@@ -1,10 +1,23 @@
-import { Node, mergeAttributes } from '@tiptap/core';
+import { Node } from '@tiptap/core';
+import katex from 'katex';
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     mathBlock: {
       setMathBlock: (attrs: { formula: string }) => ReturnType;
     };
+  }
+}
+
+function renderKatex(formula: string, container: HTMLElement) {
+  try {
+    katex.render(formula, container, {
+      displayMode: true,
+      throwOnError: false,
+      output: 'html',
+    });
+  } catch {
+    container.innerHTML = `<pre class="math-fallback">$$${formula}$$</pre>`;
   }
 }
 
@@ -24,38 +37,18 @@ export const MathExtension = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    const formula = HTMLAttributes.formula || '';
-    const wrapper = document.createElement('div');
-    wrapper.setAttribute('data-type', 'math-block');
-    wrapper.classList.add('math-block');
-    wrapper.setAttribute('data-formula', formula);
-    wrapper.contentEditable = 'false';
-
-    // Try to render with KaTeX if available
-    try {
-      const katex = (window as any).katex;
-      if (katex) {
-        katex.render(formula, wrapper, {
-          displayMode: true,
-          throwOnError: false,
-        });
-      } else {
-        wrapper.innerHTML = `<pre class="math-fallback">$$${formula}$$</pre>`;
-      }
-    } catch {
-      wrapper.innerHTML = `<pre class="math-fallback">$$${formula}$$</pre>`;
-    }
-
-    return wrapper;
+    return ['div', {
+      'data-type': 'math-block',
+      class: 'math-block',
+      'data-formula': HTMLAttributes.formula || '',
+      contenteditable: 'false',
+    }, HTMLAttributes.formula || ''];
   },
 
   addCommands() {
     return {
       setMathBlock: (attrs) => ({ commands }) => {
-        return commands.insertContent({
-          type: this.name,
-          attrs,
-        });
+        return commands.insertContent({ type: this.name, attrs });
       },
     };
   },
@@ -65,28 +58,19 @@ export const MathExtension = Node.create({
       const dom = document.createElement('div');
       dom.classList.add('math-block');
       dom.setAttribute('data-type', 'math-block');
-      dom.setAttribute('data-formula', node.attrs.formula);
       dom.contentEditable = 'false';
 
-      const renderMath = (formula: string) => {
-        try {
-          const katex = (window as any).katex;
-          if (katex) {
-            katex.render(formula, dom, {
-              displayMode: true,
-              throwOnError: false,
-            });
-          } else {
-            dom.innerHTML = `<pre class="math-fallback">$$${formula}$$</pre>`;
-          }
-        } catch {
-          dom.innerHTML = `<pre class="math-fallback">$$${formula}$$</pre>`;
+      const render = (formula: string) => {
+        dom.setAttribute('data-formula', formula);
+        if (!formula) {
+          dom.innerHTML = '<span class="math-fallback">Click to add formula</span>';
+          return;
         }
+        renderKatex(formula, dom);
       };
 
-      renderMath(node.attrs.formula);
+      render(node.attrs.formula);
 
-      // Click to edit
       dom.addEventListener('click', () => {
         if (!editor.isEditable) return;
         const newFormula = prompt('Edit LaTeX formula:', node.attrs.formula);
@@ -102,8 +86,7 @@ export const MathExtension = Node.create({
         dom,
         update(updatedNode) {
           if (updatedNode.type.name !== 'mathBlock') return false;
-          dom.setAttribute('data-formula', updatedNode.attrs.formula);
-          renderMath(updatedNode.attrs.formula);
+          render(updatedNode.attrs.formula);
           return true;
         },
       };

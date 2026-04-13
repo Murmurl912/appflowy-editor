@@ -70,3 +70,4 @@ flutter:
     - assets/web/vditor/dist/js/lute/
     - assets/web/vditor/dist/js/mermaid/
     - assets/web/tiptap/
+    - assets/web/tiptap/fonts/

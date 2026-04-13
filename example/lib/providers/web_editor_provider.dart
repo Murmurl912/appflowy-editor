@@ -38,6 +38,9 @@ class WebEditorProvider extends ChangeNotifier {
   int get headingLevel => (_formatState['headingLevel'] as int?) ?? 0;
   bool get canUndo => _formatState['canUndo'] == true;
   bool get canRedo => _formatState['canRedo'] == true;
+  bool get hasSelection => _formatState['hasSelection'] == true;
+  String get nodeType => (_formatState['nodeType'] as String?) ?? 'paragraph';
+  String get textAlign => (_formatState['textAlign'] as String?) ?? 'left';
 
   String get title {
     final lines = _document.content.split('\n');
@@ -111,6 +114,22 @@ class WebEditorProvider extends ChangeNotifier {
   void formatTable() => _callBridge('formatTable');
   void formatLine() => _callBridge('formatLine');
   void formatHeadings() => _callBridge('formatHeadings');
+
+  void formatUnderline() => _callBridge('formatUnderline');
+  void formatHighlight() => _callBridge('formatHighlight');
+
+  void alignLeft() => _callBridge('alignLeft');
+  void alignCenter() => _callBridge('alignCenter');
+  void alignRight() => _callBridge('alignRight');
+
+  void tableAddRowBefore() => _callBridge('tableAddRowBefore');
+  void tableAddRowAfter() => _callBridge('tableAddRowAfter');
+  void tableAddColBefore() => _callBridge('tableAddColBefore');
+  void tableAddColAfter() => _callBridge('tableAddColAfter');
+  void tableDeleteRow() => _callBridge('tableDeleteRow');
+  void tableDeleteCol() => _callBridge('tableDeleteCol');
+  void tableDeleteTable() => _callBridge('tableDeleteTable');
+  void tableToggleHeader() => _callBridge('tableToggleHeader');
 
   void insertHeading(int level) => _callBridge('insertHeading', [level]);
   void insertMathBlock() => _callBridge('insertMathBlock');

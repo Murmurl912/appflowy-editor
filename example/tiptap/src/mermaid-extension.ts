@@ -1,4 +1,33 @@
 import { Node } from '@tiptap/core';
+import mermaid from 'mermaid';
+
+let mermaidInitialized = false;
+
+function ensureMermaidInit(isDark: boolean = false) {
+  if (mermaidInitialized) return;
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: isDark ? 'dark' : 'default',
+    securityLevel: 'loose',
+  });
+  mermaidInitialized = true;
+}
+
+async function renderMermaidSvg(code: string, container: HTMLElement) {
+  const isDark = document.body.classList.contains('dark');
+  ensureMermaidInit(isDark);
+  try {
+    const id = 'mermaid-' + Math.random().toString(36).substring(2, 11);
+    const { svg } = await mermaid.render(id, code);
+    container.innerHTML = svg;
+  } catch {
+    container.innerHTML = `<pre class="mermaid-source">${escapeHtml(code)}</pre>`;
+  }
+}
+
+function escapeHtml(s: string) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -29,16 +58,13 @@ export const MermaidExtension = Node.create({
       class: 'mermaid-block',
       'data-code': HTMLAttributes.code || '',
       contenteditable: 'false',
-    }, `\`\`\`mermaid\n${HTMLAttributes.code}\n\`\`\``];
+    }, HTMLAttributes.code || ''];
   },
 
   addCommands() {
     return {
       setMermaidBlock: (attrs) => ({ commands }) => {
-        return commands.insertContent({
-          type: this.name,
-          attrs,
-        });
+        return commands.insertContent({ type: this.name, attrs });
       },
     };
   },
@@ -48,31 +74,19 @@ export const MermaidExtension = Node.create({
       const dom = document.createElement('div');
       dom.classList.add('mermaid-block');
       dom.setAttribute('data-type', 'mermaid-block');
-      dom.setAttribute('data-code', node.attrs.code);
       dom.contentEditable = 'false';
 
-      const renderDiagram = (code: string) => {
-        // Try to use mermaid.js if loaded
-        try {
-          const mermaid = (window as any).mermaid;
-          if (mermaid) {
-            const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
-            mermaid.render(id, code).then((result: any) => {
-              dom.innerHTML = result.svg;
-            }).catch(() => {
-              dom.innerHTML = `<pre class="mermaid-source">${code}</pre>`;
-            });
-          } else {
-            dom.innerHTML = `<pre class="mermaid-source">${code}</pre>`;
-          }
-        } catch {
-          dom.innerHTML = `<pre class="mermaid-source">${code}</pre>`;
+      const render = (code: string) => {
+        dom.setAttribute('data-code', code);
+        if (!code) {
+          dom.innerHTML = '<span class="mermaid-source">Click to add diagram</span>';
+          return;
         }
+        renderMermaidSvg(code, dom);
       };
 
-      renderDiagram(node.attrs.code);
+      render(node.attrs.code);
 
-      // Click to edit
       dom.addEventListener('click', () => {
         if (!editor.isEditable) return;
         const newCode = prompt('Edit Mermaid diagram:', node.attrs.code);
@@ -88,8 +102,7 @@ export const MermaidExtension = Node.create({
         dom,
         update(updatedNode) {
           if (updatedNode.type.name !== 'mermaidBlock') return false;
-          dom.setAttribute('data-code', updatedNode.attrs.code);
-          renderDiagram(updatedNode.attrs.code);
+          render(updatedNode.attrs.code);
           return true;
         },
       };

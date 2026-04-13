@@ -104,6 +104,54 @@ function htmlToMarkdown(html: string): string {
   return turndown.turndown(html);
 }
 
+// Custom marked extensions: $$math$$ blocks and ```mermaid code fences
+const mathBlockExtension: marked.TokenizerAndRendererExtensions = {
+  extensions: [{
+    name: 'mathBlock',
+    level: 'block',
+    start(src: string) { return src.indexOf('$$'); },
+    tokenizer(src: string) {
+      const match = src.match(/^\$\$\s*\n([\s\S]*?)\n\$\$\s*(?:\n|$)/);
+      if (match) {
+        return { type: 'mathBlock', raw: match[0], formula: match[1].trim() };
+      }
+      // Inline $$...$$ on a single line
+      const inlineMatch = src.match(/^\$\$([^\n]+?)\$\$\s*(?:\n|$)/);
+      if (inlineMatch) {
+        return { type: 'mathBlock', raw: inlineMatch[0], formula: inlineMatch[1].trim() };
+      }
+      return undefined;
+    },
+    renderer(token: any) {
+      return `<div data-type="math-block" class="math-block" data-formula="${escapeAttr(token.formula)}">${escapeHtml(token.formula)}</div>\n`;
+    },
+  }],
+};
+
+function escapeAttr(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+marked.use(mathBlockExtension);
+
+// Override code fence renderer to detect mermaid
+const defaultRenderer = new marked.Renderer();
+const origCode = defaultRenderer.code;
+marked.use({
+  renderer: {
+    code(this: any, token: { text: string; lang?: string }) {
+      if (token.lang === 'mermaid') {
+        return `<div data-type="mermaid-block" class="mermaid-block" data-code="${escapeAttr(token.text)}">${escapeHtml(token.text)}</div>\n`;
+      }
+      return origCode.call(this, token);
+    },
+  },
+});
+
 async function markdownToHtml(md: string): Promise<string> {
   return await marked.parse(md);
 }
@@ -128,7 +176,41 @@ let editor: Editor | null = null;
 
 function getFormatState(): Record<string, any> {
   if (!editor) return {};
+
+  const { from, to, empty } = editor.state.selection;
+  const hasSelection = !empty;
+
+  // Determine the active block node type
+  const resolvedPos = editor.state.doc.resolve(from);
+  let nodeType = 'paragraph';
+  for (let d = resolvedPos.depth; d >= 0; d--) {
+    const n = resolvedPos.node(d);
+    if (['heading', 'codeBlock', 'blockquote', 'bulletList', 'orderedList',
+         'taskList', 'table', 'mathBlock', 'mermaidBlock', 'image',
+         'horizontalRule'].includes(n.type.name)) {
+      nodeType = n.type.name;
+      break;
+    }
+    if (n.type.name === 'listItem' || n.type.name === 'taskItem') {
+      nodeType = n.type.name;
+      break;
+    }
+  }
+
+  // Text alignment
+  let textAlign = 'left';
+  try {
+    const node = editor.state.doc.resolve(from).parent;
+    textAlign = node.attrs.textAlign || 'left';
+  } catch {}
+
   return {
+    // Selection context
+    hasSelection,
+    nodeType,
+    textAlign,
+
+    // Inline marks
     bold: editor.isActive('bold'),
     italic: editor.isActive('italic'),
     underline: editor.isActive('underline'),
@@ -138,6 +220,8 @@ function getFormatState(): Record<string, any> {
     highlight: editor.isActive('highlight'),
     subscript: editor.isActive('subscript'),
     superscript: editor.isActive('superscript'),
+
+    // Block types
     list: editor.isActive('bulletList'),
     'ordered-list': editor.isActive('orderedList'),
     check: editor.isActive('taskList'),
@@ -152,6 +236,8 @@ function getFormatState(): Record<string, any> {
     })(),
     table: editor.isActive('table'),
     image: editor.isActive('image'),
+
+    // History
     canUndo: editor.can().undo(),
     canRedo: editor.can().redo(),
   };
@@ -243,6 +329,21 @@ const bridge = {
   formatLine() {
     editor?.chain().focus().setHorizontalRule().run();
   },
+
+  // Table operations
+  tableAddRowBefore() { editor?.chain().focus().addRowBefore().run(); },
+  tableAddRowAfter() { editor?.chain().focus().addRowAfter().run(); },
+  tableAddColBefore() { editor?.chain().focus().addColumnBefore().run(); },
+  tableAddColAfter() { editor?.chain().focus().addColumnAfter().run(); },
+  tableDeleteRow() { editor?.chain().focus().deleteRow().run(); },
+  tableDeleteCol() { editor?.chain().focus().deleteColumn().run(); },
+  tableDeleteTable() { editor?.chain().focus().deleteTable().run(); },
+  tableToggleHeader() { editor?.chain().focus().toggleHeaderRow().run(); },
+
+  // Alignment
+  alignLeft() { editor?.chain().focus().setTextAlign('left').run(); },
+  alignCenter() { editor?.chain().focus().setTextAlign('center').run(); },
+  alignRight() { editor?.chain().focus().setTextAlign('right').run(); },
 
   insertImage(url: string) {
     editor?.chain().focus().setImage({ src: url }).run();

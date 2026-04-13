@@ -9,55 +9,15 @@ class EditorAppbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (searchMode, editing) = context.select(
-      (EditorProvider p) => (p.searchMode, p.editing),
+    final searchMode = context.select(
+      (EditorProvider p) => p.searchMode,
     );
     if (searchMode) return const _SearchAppBar();
-    if (editing) return const _EditingBar();
-    return const _ReadingBar();
+    return const _EditingBar();
   }
 }
 
-/// Reading mode: back + search + edit
-class _ReadingBar extends StatelessWidget {
-  const _ReadingBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        StadiumButtonBar(
-          margin: const EdgeInsets.symmetric(horizontal: 12),
-          buttons: [
-            SizedBox(
-              width: 40,
-              height: 40,
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back_sharp),
-                onPressed: () => Navigator.of(context).maybePop(),
-              ),
-            ),
-          ],
-        ),
-        const Spacer(),
-        StadiumButtonBar(
-          buttons: [
-            IconButton(
-              icon: const Icon(Icons.edit_note),
-              onPressed: context.read<EditorProvider>().enterEditing,
-            ),
-            IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: context.read<EditorProvider>().enterSearch,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-/// Editing mode: done(check) + undo/redo + search
+/// Editing mode: back + undo/redo + search
 class _EditingBar extends StatelessWidget {
   const _EditingBar();
 
@@ -93,8 +53,8 @@ class _EditingBar extends StatelessWidget {
               onPressed: canRedo ? context.read<EditorProvider>().redo : null,
             ),
             IconButton(
-              icon: const Icon(Icons.check),
-              onPressed: context.read<EditorProvider>().exitEditing,
+              icon: const Icon(Icons.search),
+              onPressed: context.read<EditorProvider>().enterSearch,
             ),
           ],
         ),

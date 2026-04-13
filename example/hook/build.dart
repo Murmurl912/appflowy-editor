@@ -109,6 +109,22 @@ Future<void> _buildTiptap(String packageRoot) async {
     distCss.copySync('$packageRoot/assets/web/tiptap/tiptap.css');
   }
 
+  // Copy KaTeX CSS + fonts
+  final katexCss = File('$packageRoot/tiptap/node_modules/katex/dist/katex.min.css');
+  if (katexCss.existsSync()) {
+    katexCss.copySync('$packageRoot/assets/web/tiptap/katex.min.css');
+  }
+  final katexFontsDir = Directory('$packageRoot/tiptap/node_modules/katex/dist/fonts');
+  final targetFontsDir = Directory('$packageRoot/assets/web/tiptap/fonts');
+  if (katexFontsDir.existsSync()) {
+    if (!targetFontsDir.existsSync()) targetFontsDir.createSync(recursive: true);
+    for (final f in katexFontsDir.listSync().whereType<File>()) {
+      if (f.path.endsWith('.woff2')) {
+        f.copySync('${targetFontsDir.path}/${f.uri.pathSegments.last}');
+      }
+    }
+  }
+
   _log('TipTap: build complete.');
 }
 

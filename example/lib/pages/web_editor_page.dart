@@ -343,9 +343,9 @@ class _WebToolbar extends StatelessWidget {
     final provider = context.watch<WebEditorProvider>();
     if (!provider.editorReady) return const SizedBox.shrink();
 
-    final fs = provider.formatState;
     final bottomPadding = MediaQuery.viewPaddingOf(context).bottom;
     final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
+    final items = _buildItems(provider);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -359,28 +359,7 @@ class _WebToolbar extends StatelessWidget {
             child: StadiumButtonBar(
               scrollable: true,
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              buttons: [
-                _Btn(Icons.format_bold, fs['bold'] == true, provider.formatBold),
-                _Btn(Icons.format_italic, fs['italic'] == true, provider.formatItalic),
-                _Btn(Icons.format_strikethrough, fs['strike'] == true, provider.formatStrikethrough),
-                _Btn(Icons.code, fs['inline-code'] == true, provider.formatInlineCode),
-                _Btn(Icons.link, fs['link'] == true, provider.formatLink),
-                _D(),
-                _Btn(Icons.format_list_bulleted, fs['list'] == true, provider.formatList),
-                _Btn(Icons.format_list_numbered, fs['ordered-list'] == true, provider.formatOrderedList),
-                _Btn(Icons.check_box_outlined, fs['check'] == true, provider.formatCheck),
-                _Btn(Icons.format_indent_increase, false, provider.formatIndent),
-                _Btn(Icons.format_indent_decrease, false, provider.formatOutdent),
-                _D(),
-                _Btn(Icons.title, fs['headings'] == true, provider.formatHeadings),
-                _Btn(Icons.format_quote, fs['quote'] == true, provider.formatQuote),
-                _Btn(Icons.data_object, fs['code'] == true, provider.formatCode),
-                _Btn(Icons.table_chart_outlined, false, provider.formatTable),
-                _Btn(Icons.horizontal_rule, false, provider.formatLine),
-                _D(),
-                _Btn(Icons.functions, false, provider.insertMathBlock),
-                _Btn(Icons.account_tree_outlined, false, provider.insertMermaid),
-              ],
+              buttons: items,
             ),
           ),
           if (keyboardHeight > 0) ...[
@@ -397,6 +376,142 @@ class _WebToolbar extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  List<Widget> _buildItems(WebEditorProvider p) {
+    final hasSelection = p.hasSelection;
+    final nodeType = p.nodeType;
+
+    // Text selected: show inline formatting
+    if (hasSelection) {
+      return _textSelectionItems(p);
+    }
+
+    // Inside a list item: show indent + list types + block types + insert
+    if (const ['listItem', 'taskItem'].contains(nodeType)) {
+      return _listItems(p);
+    }
+
+    // Inside table: show table-specific tools
+    if (nodeType == 'table') {
+      return _tableItems(p);
+    }
+
+    // Inside code block / image / math / mermaid: minimal
+    if (const ['codeBlock', 'mathBlock', 'mermaidBlock', 'image']
+        .contains(nodeType)) {
+      return _atomBlockItems(p);
+    }
+
+    // Default (paragraph / heading / blockquote): block types + alignment + insert
+    return _defaultItems(p);
+  }
+
+  // --- Text selected: inline marks ---
+  List<Widget> _textSelectionItems(WebEditorProvider p) {
+    return [
+      _Btn(Icons.format_bold, p.isFormatActive('bold'), p.formatBold),
+      _Btn(Icons.format_italic, p.isFormatActive('italic'), p.formatItalic),
+      _Btn(Icons.format_underline, p.isFormatActive('underline'), p.formatUnderline),
+      _Btn(Icons.format_strikethrough, p.isFormatActive('strike'), p.formatStrikethrough),
+      _Btn(Icons.code, p.isFormatActive('inline-code'), p.formatInlineCode),
+      _Btn(Icons.link, p.isFormatActive('link'), p.formatLink),
+      _D(),
+      _headingLabel(p),
+      _Btn(Icons.format_quote, p.isFormatActive('quote'), p.formatQuote),
+    ];
+  }
+
+  // --- Inside list: indent + list type switching ---
+  List<Widget> _listItems(WebEditorProvider p) {
+    return [
+      _Btn(Icons.format_indent_increase, false, p.formatIndent),
+      _Btn(Icons.format_indent_decrease, false, p.formatOutdent),
+      _D(),
+      _Btn(Icons.format_list_bulleted, p.isFormatActive('list'), p.formatList),
+      _Btn(Icons.format_list_numbered, p.isFormatActive('ordered-list'), p.formatOrderedList),
+      _Btn(Icons.check_box_outlined, p.isFormatActive('check'), p.formatCheck),
+      _D(),
+      _headingLabel(p),
+      _Btn(Icons.format_quote, p.isFormatActive('quote'), p.formatQuote),
+      _D(),
+      ..._insertItems(p),
+    ];
+  }
+
+  // --- Inside table: table operations ---
+  List<Widget> _tableItems(WebEditorProvider p) {
+    return [
+      _Btn(Icons.add, false, p.tableAddRowAfter),           // add row below
+      _Btn(Icons.table_rows_outlined, false, p.tableAddRowBefore),  // add row above
+      _Btn(Icons.remove, false, p.tableDeleteRow),           // delete row
+      _D(),
+      _Btn(Icons.add_box_outlined, false, p.tableAddColAfter),    // add col right
+      _Btn(Icons.view_column_outlined, false, p.tableAddColBefore), // add col left
+      _Btn(Icons.remove_circle_outline, false, p.tableDeleteCol),  // delete col
+      _D(),
+      _Btn(Icons.border_top, false, p.tableToggleHeader),
+      _Btn(Icons.delete_outline, false, p.tableDeleteTable),
+    ];
+  }
+
+  // --- Atom blocks (code, etc): minimal ---
+  List<Widget> _atomBlockItems(WebEditorProvider p) {
+    return [
+      _headingLabel(p),
+      _Btn(Icons.format_list_bulleted, p.isFormatActive('list'), p.formatList),
+      _Btn(Icons.format_list_numbered, p.isFormatActive('ordered-list'), p.formatOrderedList),
+      _Btn(Icons.check_box_outlined, p.isFormatActive('check'), p.formatCheck),
+      _D(),
+      ..._insertItems(p),
+    ];
+  }
+
+  // --- Default (paragraph / heading): block types + alignment + insert ---
+  List<Widget> _defaultItems(WebEditorProvider p) {
+    return [
+      _Btn(Icons.format_indent_increase, false, p.formatIndent),
+      _Btn(Icons.format_indent_decrease, false, p.formatOutdent),
+      _D(),
+      _headingLabel(p),
+      _Btn(Icons.format_list_bulleted, p.isFormatActive('list'), p.formatList),
+      _Btn(Icons.format_list_numbered, p.isFormatActive('ordered-list'), p.formatOrderedList),
+      _Btn(Icons.check_box_outlined, p.isFormatActive('check'), p.formatCheck),
+      _Btn(Icons.format_quote, p.isFormatActive('quote'), p.formatQuote),
+      _D(),
+      _Btn(Icons.format_align_left, p.textAlign == 'left', p.alignLeft),
+      _Btn(Icons.format_align_center, p.textAlign == 'center', p.alignCenter),
+      _Btn(Icons.format_align_right, p.textAlign == 'right', p.alignRight),
+      _D(),
+      ..._insertItems(p),
+    ];
+  }
+
+  // --- Insert items (shared across modes) ---
+  List<Widget> _insertItems(WebEditorProvider p) {
+    return [
+      _Btn(Icons.data_object, p.isFormatActive('code'), p.formatCode),
+      _Btn(Icons.table_chart_outlined, false, p.formatTable),
+      _Btn(Icons.horizontal_rule, false, p.formatLine),
+      _Btn(Icons.functions, false, p.insertMathBlock),
+      _Btn(Icons.account_tree_outlined, false, p.insertMermaid),
+    ];
+  }
+
+  // --- Heading label button (H1/H2/H3/Aa) ---
+  Widget _headingLabel(WebEditorProvider p) {
+    final level = p.headingLevel;
+    final label = switch (level) {
+      1 => 'H1',
+      2 => 'H2',
+      3 => 'H3',
+      4 => 'H4',
+      5 => 'H5',
+      6 => 'H6',
+      _ => 'Aa',
+    };
+    final isActive = level > 0;
+    return _HeadingBtn(label: label, active: isActive, provider: p);
   }
 }
 
@@ -441,6 +556,142 @@ class _D extends StatelessWidget {
       height: 24,
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       color: isDark ? Colors.grey[700] : Colors.grey[300],
+    );
+  }
+}
+
+class _HeadingBtn extends StatefulWidget {
+  const _HeadingBtn({
+    required this.label,
+    required this.active,
+    required this.provider,
+  });
+
+  final String label;
+  final bool active;
+  final WebEditorProvider provider;
+
+  @override
+  State<_HeadingBtn> createState() => _HeadingBtnState();
+}
+
+class _HeadingBtnState extends State<_HeadingBtn> {
+  final LayerLink _layerLink = LayerLink();
+  OverlayEntry? _overlayEntry;
+
+  void _toggle() {
+    if (_overlayEntry != null) {
+      _dismiss();
+    } else {
+      _show();
+    }
+  }
+
+  void _show() {
+    _overlayEntry = OverlayEntry(
+      builder: (_) => Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: _dismiss,
+              child: const SizedBox.expand(),
+            ),
+          ),
+          CompositedTransformFollower(
+            link: _layerLink,
+            targetAnchor: Alignment.topLeft,
+            followerAnchor: Alignment.bottomLeft,
+            offset: const Offset(0, -8),
+            child: ExcludeFocus(
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(8),
+                child: IntrinsicWidth(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _item('Heading 1', 1, 20.0),
+                      _item('Heading 2', 2, 18.0),
+                      _item('Heading 3', 3, 16.0),
+                      _item('Text', 0, 14.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    Overlay.of(context, rootOverlay: true).insert(_overlayEntry!);
+  }
+
+  void _dismiss() {
+    _overlayEntry?.remove();
+    _overlayEntry?.dispose();
+    _overlayEntry = null;
+  }
+
+  Widget _item(String text, int level, double fontSize) {
+    final currentLevel = widget.provider.headingLevel;
+    final isActive =
+        level == 0 ? currentLevel == 0 : currentLevel == level;
+    return InkWell(
+      onTap: () {
+        _dismiss();
+        if (level == 0) {
+          // Convert to paragraph (toggle off heading)
+          if (widget.provider.headingLevel > 0) {
+            widget.provider.insertHeading(widget.provider.headingLevel);
+          }
+        } else {
+          widget.provider.insertHeading(level);
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _dismiss();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: GestureDetector(
+        onTap: _toggle,
+        child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          alignment: Alignment.center,
+          child: Text(
+            widget.label,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: widget.active
+                  ? (isDark ? Colors.white : Colors.black)
+                  : (isDark ? Colors.grey[500] : Colors.grey[700]),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
