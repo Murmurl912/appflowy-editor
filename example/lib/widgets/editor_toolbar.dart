@@ -3,8 +3,10 @@ import 'dart:math';
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:example/providers/editor_provider.dart';
 import 'package:example/widgets/backdrop_container.dart';
+import 'package:example/widgets/code_block_component.dart' show CodeBlockKeys;
 import 'package:example/widgets/custom_block_components.dart';
 import 'package:example/widgets/math_equation_block_component.dart';
+import 'package:example/widgets/mermaid_block_component.dart' show MermaidBlockKeys;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -111,7 +113,7 @@ class _ToolbarContent extends StatelessWidget {
   List<Widget> _buildItems(BuildContext context) {
     final sel = selection;
 
-    // No selection: show default block items (same as empty paragraph)
+    // No selection: show default block items
     if (sel == null) {
       return _buildNoSelectionItems(context);
     }
@@ -121,20 +123,51 @@ class _ToolbarContent extends StatelessWidget {
       return _buildTextSelectionItems(context, sel);
     }
 
+    // Find the node at cursor and walk up to find the context block
     final node = editorState.getNodeAtPath(sel.start.path);
     if (node == null) return _buildNoSelectionItems(context);
 
-    final isListBlock = const [
+    // Check if cursor is inside a table cell
+    final tableNode = _findAncestor(node, TableBlockKeys.type);
+    if (tableNode != null) {
+      return _buildTableItems(context, sel, node, tableNode);
+    }
+
+    // Code block
+    if (node.type == CodeBlockKeys.type) {
+      return _buildCodeBlockItems(context, sel);
+    }
+
+    // Mermaid block
+    if (node.type == MermaidBlockKeys.type) {
+      return _buildMermaidItems(context, sel);
+    }
+
+    // Math equation
+    if (node.type == MathEquationBlockKeys.type) {
+      return _buildAtomBlockItems(context, sel, 'Math');
+    }
+
+    // List blocks
+    if (const [
       BulletedListBlockKeys.type,
       NumberedListBlockKeys.type,
       TodoListBlockKeys.type,
-    ].contains(node.type);
-
-    if (isListBlock) {
+    ].contains(node.type)) {
       return _buildListItems(context, sel);
     }
 
     return _buildDefaultItems(context, sel);
+  }
+
+  /// Walk up the node tree to find an ancestor of the given type.
+  Node? _findAncestor(Node node, String type) {
+    Node? current = node;
+    while (current != null) {
+      if (current.type == type) return current;
+      current = current.parent;
+    }
+    return null;
   }
 
   List<Widget> _mediaItems() => [
@@ -170,6 +203,84 @@ class _ToolbarContent extends StatelessWidget {
       _ToolbarDivider(),
       _HeadingPopover(editorState: editorState, selection: sel),
       _BlockTypeButton(editorState: editorState, selection: sel, blockType: QuoteBlockKeys.type, icon: Icons.format_quote),
+    ];
+  }
+
+  // --- Table: add/delete row/col ---
+  List<Widget> _buildTableItems(BuildContext context, Selection sel, Node cursorNode, Node tableNode) {
+    // Find the cell node containing cursor
+    Node? cellNode = cursorNode;
+    while (cellNode != null && cellNode.type != TableCellBlockKeys.type) {
+      cellNode = cellNode.parent;
+    }
+    final col = (cellNode?.attributes[TableCellBlockKeys.colPosition] as int?) ?? 0;
+    final row = (cellNode?.attributes[TableCellBlockKeys.rowPosition] as int?) ?? 0;
+
+    return [
+      _ToolbarIconButton(icon: Icons.add, onPressed: () {
+        TableActions.add(tableNode, row + 1, editorState, TableDirection.row);
+      }),
+      _ToolbarIconButton(icon: Icons.table_rows_outlined, onPressed: () {
+        TableActions.add(tableNode, row, editorState, TableDirection.row);
+      }),
+      _ToolbarIconButton(icon: Icons.remove, onPressed: () {
+        TableActions.delete(tableNode, row, editorState, TableDirection.row);
+      }),
+      _ToolbarDivider(),
+      _ToolbarIconButton(icon: Icons.add_box_outlined, onPressed: () {
+        TableActions.add(tableNode, col + 1, editorState, TableDirection.col);
+      }),
+      _ToolbarIconButton(icon: Icons.view_column_outlined, onPressed: () {
+        TableActions.add(tableNode, col, editorState, TableDirection.col);
+      }),
+      _ToolbarIconButton(icon: Icons.remove_circle_outline, onPressed: () {
+        TableActions.delete(tableNode, col, editorState, TableDirection.col);
+      }),
+      _ToolbarDivider(),
+      _ToolbarIconButton(icon: Icons.delete_outline, onPressed: () {
+        final transaction = editorState.transaction
+          ..insertNode(tableNode.path, paragraphNode())
+          ..deleteNode(tableNode);
+        editorState.apply(transaction);
+      }),
+    ];
+  }
+
+  // --- Code block: language hint + exit ---
+  List<Widget> _buildCodeBlockItems(BuildContext context, Selection sel) {
+    final node = editorState.getNodeAtPath(sel.start.path);
+    final lang = node?.attributes[CodeBlockKeys.language] as String? ?? '';
+    return [
+      if (lang.isNotEmpty) Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Text(lang, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+      ),
+      _ToolbarDivider(),
+      ..._mediaItems(),
+    ];
+  }
+
+  // --- Mermaid: just show insert tools ---
+  List<Widget> _buildMermaidItems(BuildContext context, Selection sel) {
+    return [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Text('Mermaid', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+      ),
+      _ToolbarDivider(),
+      ..._mediaItems(),
+    ];
+  }
+
+  // --- Atom blocks (math, image, etc): label + insert ---
+  List<Widget> _buildAtomBlockItems(BuildContext context, Selection sel, String label) {
+    return [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+      ),
+      _ToolbarDivider(),
+      ..._mediaItems(),
     ];
   }
 

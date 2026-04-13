@@ -1,4 +1,5 @@
 import { Editor } from '@tiptap/core';
+import { DOMSerializer } from '@tiptap/pm/model';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Highlight from '@tiptap/extension-highlight';
@@ -20,6 +21,7 @@ import TurndownService from 'turndown';
 import { marked } from 'marked';
 import { MathExtension } from './math-extension';
 import { MermaidExtension } from './mermaid-extension';
+import { ClipboardExtension } from './clipboard-extension';
 
 // ============================================================
 // Markdown conversion
@@ -439,6 +441,7 @@ const lowlight = createLowlight(common);
       CodeBlockLowlight.configure({ lowlight }),
       MathExtension,
       MermaidExtension,
+      ClipboardExtension,
     ],
     content: html,
     autofocus: false,
@@ -464,6 +467,10 @@ const lowlight = createLowlight(common);
       send('onBlur');
     },
   });
+
+  // Expose serializer and turndown for clipboard extension
+  (window as any).__tiptapDOMSerializer = DOMSerializer.fromSchema(editor.schema);
+  (window as any).__tiptapTurndown = turndown;
 
   // Apply initial insets
   setTimeout(() => {
