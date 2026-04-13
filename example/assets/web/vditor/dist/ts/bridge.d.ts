@@ -4,6 +4,7 @@
  * Exposed as `window.VditorBridge` after init.
  * Uses `window.flutter_inappwebview.callHandler()` to send events to Flutter.
  */
+/// <reference types="./types" />
 type FormatState = Record<string, boolean>;
 declare function notifyFormatState(): void;
 declare const bridge: {

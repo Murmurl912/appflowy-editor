@@ -5,6 +5,8 @@ import 'package:example/repo/document_repository.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 
+enum EditorEngine { flutter, vditor, tiptap }
+
 class DocumentListProvider extends ChangeNotifier {
   DocumentListProvider(this._repo);
 
@@ -12,15 +14,24 @@ class DocumentListProvider extends ChangeNotifier {
 
   List<AppDocument> _documents = [];
   bool _loading = true;
-  bool _useWebEditor = false;
+  EditorEngine _editorEngine = EditorEngine.flutter;
 
   List<AppDocument> get documents => _documents;
   bool get loading => _loading;
   DocumentRepository get repo => _repo;
-  bool get useWebEditor => _useWebEditor;
+  EditorEngine get editorEngine => _editorEngine;
+  // Keep backward compat
+  bool get useWebEditor => _editorEngine != EditorEngine.flutter;
+
+  void setEditorEngine(EditorEngine engine) {
+    _editorEngine = engine;
+    notifyListeners();
+  }
 
   void toggleEditorMode() {
-    _useWebEditor = !_useWebEditor;
+    _editorEngine = _editorEngine == EditorEngine.flutter
+        ? EditorEngine.vditor
+        : EditorEngine.flutter;
     notifyListeners();
   }
 

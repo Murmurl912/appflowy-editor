@@ -11,7 +11,7 @@ import 'package:provider/provider.dart';
 
 /// Custom scheme for loading local resources.
 ///
-/// - `app://asset/web/vditor.html` -> Flutter asset `assets/web/vditor.html`
+/// - `app://asset/web/vditor/vditor.html` -> Flutter asset `assets/web/vditor/vditor.html`
 /// - `app://local/path/to/file.png` -> Device file system
 const _kScheme = 'app';
 const _kAssetHost = 'asset';
@@ -115,19 +115,25 @@ class _WebEditorBodyState extends State<_WebEditorBody>
         final url = request.url;
         final host = url.host;
         final path = url.path;
+        debugPrint('[CustomScheme] $url (host=$host, path=$path)');
 
         if (host == _kMarkdownHost) {
-          // app://markdown/{id} -> serve vditor.html
-          return _loadAsset('assets/web/vditor.html');
+          final engine = provider.engineType;
+          final htmlAsset = engine == WebEngineType.tiptap
+              ? 'assets/web/tiptap/tiptap.html'
+              : 'assets/web/vditor/vditor.html';
+          return _loadAsset(htmlAsset);
         } else if (host == _kAssetHost) {
-          // app://asset/web/... -> assets/web/...
           return _loadAsset('assets$path');
         } else if (host == _kLocalHost) {
-          // app://local/absolute/path/to/file
           return _loadLocalFile(path);
         }
 
+        debugPrint('[CustomScheme] Unhandled: $url');
         return null;
+      },
+      onReceivedError: (controller, request, error) {
+        debugPrint('[WebView Error] ${request.url} -> ${error.description}');
       },
       onWebViewCreated: (controller) {
         provider.setWebController(controller);
@@ -292,6 +298,16 @@ class _WebEditorAppbar extends StatelessWidget {
               ),
             ),
           ],
+        ),
+        const SizedBox(width: 8),
+        Text(
+          provider.engineType == WebEngineType.tiptap ? 'TipTap' : 'Vditor',
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.grey[500]
+                : Colors.grey[400],
+          ),
         ),
         const Spacer(),
         StadiumButtonBar(

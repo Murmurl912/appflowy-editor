@@ -32,27 +32,38 @@ class _DocumentListPageState extends State<DocumentListPage> {
 
   void _navigateToEditor(AppDocument doc, {bool initialEditing = false}) {
     final listProvider = context.read<DocumentListProvider>();
-    final useWebEditor = listProvider.useWebEditor;
+    final engine = listProvider.editorEngine;
 
     final Widget page;
-    if (useWebEditor) {
-      page = ChangeNotifierProvider(
-        create: (_) => WebEditorProvider(
-          repo: listProvider.repo,
-          document: doc,
-          initialEditing: initialEditing,
-        ),
-        child: const WebEditorPage(),
-      );
-    } else {
-      page = ChangeNotifierProvider(
-        create: (_) => EditorProvider(
-          repo: listProvider.repo,
-          document: doc,
-          initialEditing: initialEditing,
-        ),
-        child: const EditorPage(),
-      );
+    switch (engine) {
+      case EditorEngine.vditor:
+        page = ChangeNotifierProvider(
+          create: (_) => WebEditorProvider(
+            repo: listProvider.repo,
+            document: doc,
+            initialEditing: initialEditing,
+          ),
+          child: const WebEditorPage(),
+        );
+      case EditorEngine.tiptap:
+        page = ChangeNotifierProvider(
+          create: (_) => WebEditorProvider(
+            repo: listProvider.repo,
+            document: doc,
+            initialEditing: initialEditing,
+            engineType: WebEngineType.tiptap,
+          ),
+          child: const WebEditorPage(),
+        );
+      case EditorEngine.flutter:
+        page = ChangeNotifierProvider(
+          create: (_) => EditorProvider(
+            repo: listProvider.repo,
+            document: doc,
+            initialEditing: initialEditing,
+          ),
+          child: const EditorPage(),
+        );
     }
 
     Navigator.of(context)
@@ -85,11 +96,11 @@ class _DocumentListPageState extends State<DocumentListPage> {
                       ),
                     ),
                   ),
-                  // Editor mode switcher card
+                  // Editor engine switcher card
                   SliverToBoxAdapter(
-                    child: _EditorModeSwitcher(
-                      useWebEditor: provider.useWebEditor,
-                      onToggle: provider.toggleEditorMode,
+                    child: _EditorEngineSwitcher(
+                      engine: provider.editorEngine,
+                      onSelect: provider.setEditorEngine,
                     ),
                   ),
                   // Action row
@@ -207,14 +218,14 @@ class _DocumentListPageState extends State<DocumentListPage> {
 // Editor Mode Switcher Card
 // ============================================================
 
-class _EditorModeSwitcher extends StatelessWidget {
-  const _EditorModeSwitcher({
-    required this.useWebEditor,
-    required this.onToggle,
+class _EditorEngineSwitcher extends StatelessWidget {
+  const _EditorEngineSwitcher({
+    required this.engine,
+    required this.onSelect,
   });
 
-  final bool useWebEditor;
-  final VoidCallback onToggle;
+  final EditorEngine engine;
+  final ValueChanged<EditorEngine> onSelect;
 
   @override
   Widget build(BuildContext context) {
@@ -233,19 +244,34 @@ class _EditorModeSwitcher extends StatelessWidget {
             Expanded(
               child: _ModeOption(
                 icon: Icons.flutter_dash,
-                label: 'Flutter Editor',
-                sublabel: 'Native rendering',
-                selected: !useWebEditor,
-                onTap: useWebEditor ? onToggle : null,
+                label: 'Flutter',
+                sublabel: 'Native',
+                selected: engine == EditorEngine.flutter,
+                onTap: engine != EditorEngine.flutter
+                    ? () => onSelect(EditorEngine.flutter)
+                    : null,
               ),
             ),
             Expanded(
               child: _ModeOption(
                 icon: Icons.language,
-                label: 'Web Editor',
-                sublabel: 'Vditor + Mermaid',
-                selected: useWebEditor,
-                onTap: !useWebEditor ? onToggle : null,
+                label: 'Vditor',
+                sublabel: 'Markdown IR',
+                selected: engine == EditorEngine.vditor,
+                onTap: engine != EditorEngine.vditor
+                    ? () => onSelect(EditorEngine.vditor)
+                    : null,
+              ),
+            ),
+            Expanded(
+              child: _ModeOption(
+                icon: Icons.edit_note,
+                label: 'TipTap',
+                sublabel: 'ProseMirror',
+                selected: engine == EditorEngine.tiptap,
+                onTap: engine != EditorEngine.tiptap
+                    ? () => onSelect(EditorEngine.tiptap)
+                    : null,
               ),
             ),
           ],

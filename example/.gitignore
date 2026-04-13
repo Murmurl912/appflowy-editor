@@ -35,6 +35,8 @@ migrate_working_dir/
 /build/
 
 # Web related
+tiptap/node_modules/
+tiptap/dist/
 
 # Symbolication related
 app.*.symbols

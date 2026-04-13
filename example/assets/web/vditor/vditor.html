@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="stylesheet" href="app://asset/web/dist/index.css" />
+  <link rel="stylesheet" href="app://asset/web/vditor/dist/index.css" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; overflow: hidden; background: #fff; color: #000; }
@@ -12,7 +12,8 @@
     .vditor-toolbar { display: none !important; }
     .vditor-content { padding-top: 0 !important; }
     .vditor-ir .vditor-reset, .vditor-wysiwyg .vditor-reset, .vditor-sv .vditor-reset {
-      padding: 16px !important; font-size: 16px; line-height: 1.6;
+      padding-left: 16px; padding-right: 16px;
+      font-size: 16px; line-height: 1.6;
     }
     body.dark, body.dark html { background: #000; color: #e0e0e0; }
     body.dark .vditor-reset { color: #e0e0e0; }
@@ -21,14 +22,14 @@
 </head>
 <body>
   <div id="vditor"></div>
-  <script src="app://asset/web/dist/index.min.js"></script>
+  <script src="app://asset/web/vditor/dist/index.min.js"></script>
   <script>
     function initEditor(config) {
       const opts = JSON.parse(config);
       if (opts.dark) document.body.classList.add('dark');
 
       new Vditor('vditor', {
-        cdn: 'app://asset/web',
+        cdn: 'app://asset/web/vditor',
         mode: 'ir',
         lang: 'en_US',
         theme: opts.dark ? 'dark' : 'classic',

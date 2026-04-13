@@ -53,18 +53,20 @@ flutter:
     - assets/
     - assets/images/
     - assets/web/
-    - assets/web/dist/
-    - assets/web/dist/css/
-    - assets/web/dist/css/content-theme/
-    - assets/web/dist/images/
-    - assets/web/dist/images/emoji/
-    - assets/web/dist/js/
-    - assets/web/dist/js/highlight.js/
-    - assets/web/dist/js/highlight.js/styles/
-    - assets/web/dist/js/highlight.js/styles/base16/
-    - assets/web/dist/js/i18n/
-    - assets/web/dist/js/icons/
-    - assets/web/dist/js/katex/
-    - assets/web/dist/js/katex/fonts/
-    - assets/web/dist/js/lute/
-    - assets/web/dist/js/mermaid/
+    - assets/web/vditor/
+    - assets/web/vditor/dist/
+    - assets/web/vditor/dist/css/
+    - assets/web/vditor/dist/css/content-theme/
+    - assets/web/vditor/dist/images/
+    - assets/web/vditor/dist/images/emoji/
+    - assets/web/vditor/dist/js/
+    - assets/web/vditor/dist/js/highlight.js/
+    - assets/web/vditor/dist/js/highlight.js/styles/
+    - assets/web/vditor/dist/js/highlight.js/styles/base16/
+    - assets/web/vditor/dist/js/i18n/
+    - assets/web/vditor/dist/js/icons/
+    - assets/web/vditor/dist/js/katex/
+    - assets/web/vditor/dist/js/katex/fonts/
+    - assets/web/vditor/dist/js/lute/
+    - assets/web/vditor/dist/js/mermaid/
+    - assets/web/tiptap/

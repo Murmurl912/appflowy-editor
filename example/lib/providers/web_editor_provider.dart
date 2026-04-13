@@ -5,13 +5,19 @@ import 'package:example/repo/document_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
+enum WebEngineType { vditor, tiptap }
+
 class WebEditorProvider extends ChangeNotifier {
   WebEditorProvider({
     required DocumentRepository repo,
     required AppDocument document,
     bool initialEditing = false,
+    WebEngineType engineType = WebEngineType.vditor,
   })  : _repo = repo,
-        _document = document;
+        _document = document,
+        _engineType = engineType;
+
+  final WebEngineType _engineType;
 
   final DocumentRepository _repo;
   AppDocument _document;
@@ -21,6 +27,7 @@ class WebEditorProvider extends ChangeNotifier {
   Map<String, dynamic> _formatState = {};
   InAppWebViewController? _webController;
 
+  WebEngineType get engineType => _engineType;
   AppDocument get document => _document;
   bool get searchMode => _searchMode;
   bool get editorReady => _editorReady;
